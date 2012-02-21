@@ -1,0 +1,3 @@
+<resources>
+    <integer name="maxdistance">50000</integer>
+</resources>
