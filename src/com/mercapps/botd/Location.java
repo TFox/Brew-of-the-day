@@ -1,32 +1,22 @@
 package com.mercapps.botd;
 
 /**
- * Property of Groupsy Mobile, inc.
- * <p/>
- * THIS FILE AND ITS CONTENTS ARE THE SOLE PROPERTY
- * OF GROUPSY MOBILE, INC. EXCEPT AS REQUIRED BY
- * ALTERNATE LICENSES OR LAW. IT MAY NOT BE DUPLICATED OR
- * USED IN ANY FASHION WITHOUT EXPRESS PERMISSION FROM AN
- * AUTHORIZED REPRESENTATIVE OF GROUPSY MOBILE, INC.
- * <p/>
- * User: TFox
- * Date: 1/29/12
- * Time: 7:24 PM
+ * Copyright © 2012 mercapps.com
  */
 public class Location {
     String name;
-    String id;
+    String reference;
     String vicinity;
 
-    public Location(String name, String id, String vicinity) {
+    public Location(String name, String reference, String vicinity) {
         this.name = name;
-        this.id = id;
+        this.reference = reference;
         this.vicinity = vicinity;
     }
 
     public Location() {
         this.name = "";
-        this.id = "";
+        this.reference = "";
         this.vicinity = "";
     }
 
@@ -34,8 +24,8 @@ public class Location {
         return name;
     }
 
-    public String getId() {
-        return id;
+    public String getReference() {
+        return reference;
     }
 
     public String getVicinity() {
@@ -46,8 +36,8 @@ public class Location {
         this.name = name;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setReference(String reference) {
+        this.reference = reference;
     }
 
     public void setVicinity(String vicinity) {

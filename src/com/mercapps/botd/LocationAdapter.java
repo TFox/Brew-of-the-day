@@ -9,6 +9,9 @@ import android.widget.TextView;
 
 import java.util.List;
 
+/**
+ * Copyright © 2012 mercapps.com
+ */
 public class LocationAdapter extends BaseAdapter {
 
     List<Location> locationList;
@@ -54,7 +57,7 @@ public class LocationAdapter extends BaseAdapter {
             holder = (ViewHolder) convertView.getTag();
         }
 
-        holder.locationName.setTag(getItem(position).getId());
+        holder.locationName.setTag(getItem(position).getReference());
         holder.locationName.setText(getItem(position).getName());
         holder.locationVicinity.setText(getItem(position).getVicinity());
 
