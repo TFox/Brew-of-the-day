@@ -27,9 +27,13 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 
 /**
- * Copyright © 2012 mercapps.com
+ * Copyright © 2012 tinyhydra.com
  */
+// Server operations. For now, REST 'Get' returns top 5 shops, and REST 'Put' will cast the user's vote.
 public class BotdServerOperations {
+    // Casts a vote for a nearby shop returned from Google places. Server will return an int for any problems.
+    // Right now the int is either 1 for problem or 0 for ok.
+    //TODO: implement more error codes once the server supports them
     public static void CastVote(final Activity activity, final Handler handler, final String email, final String shopId, final String shopRef) {
         new Thread() {
             @Override
@@ -41,6 +45,11 @@ public class BotdServerOperations {
 
                     JSONObject voteObj = new JSONObject();
 
+                    // user's phone-account-email-address is used to prevent multiple votes
+                    // the server will validate. 'shopId' is a consistent id for a specific location
+                    // but can't be used to get more data. 'shopRef' is an id that changes based on
+                    // some criteria that google places has imposed, but will let us grab data later on
+                    // and various Ref codes with the same id will always resolve to the same location.
                     voteObj.put(JSONvalues.email.toString(), email);
                     voteObj.put(JSONvalues.shopId.toString(), shopId);
                     voteObj.put(JSONvalues.shopRef.toString(), shopRef);
@@ -60,6 +69,7 @@ public class BotdServerOperations {
                                 Toast.makeText(activity.getApplicationContext(), "Vote cast!", Toast.LENGTH_SHORT).show();
                             }
                         });
+                        // Set a local flag to prevent duplicate voting
                         SharedPreferences settings = activity.getSharedPreferences(Const.GenPrefs, 0);
                         SharedPreferences.Editor editor = settings.edit();
                         editor.putLong(Const.LastVoteDate, Utils.GetDate());
@@ -68,10 +78,15 @@ public class BotdServerOperations {
                         handler.post(new Runnable() {
                             @Override
                             public void run() {
+                                // The user shouldn't see this. The above SharedPreferences code will be evaluated
+                                // when the user hits the Vote button. If the user gets sneaky and deletes local data though,
+                                // the server will catch the duplicate vote based on the user's email address and send back a '1'.
                                 Toast.makeText(activity.getApplicationContext(), "Vote refused. You've probably already voted today.", Toast.LENGTH_LONG).show();
                             }
                         });
                     }
+                    // Catch blocks. Return a generic error if anything goes wrong.
+                    //TODO: implement some better/more appropriate error handling.
                 } catch (URISyntaxException usex) {
                     usex.printStackTrace();
                     handler.post(new Runnable() {
@@ -117,6 +132,10 @@ public class BotdServerOperations {
         }.start();
     }
 
+    // We're only using the #1 voted shop right now, but at some point it would be nice to have
+    // a display for the top 5. This code allows for that, I just have to -
+    //TODO: implement 'top 5' listview activity to implement this code. Would also be helpful to
+    //TODO: show the user's current shop vote & maybe vote history.
     public static void GetTopFive(final Activity activity, final Handler handler) {
         new Thread() {
             @Override
@@ -141,8 +160,12 @@ public class BotdServerOperations {
                     in.close();
                     JSONObject results = new JSONObject(sb.toString());
                     for (int i = 1; i <= results.length(); i++) {
+                        // get JavaShop object and add it to the array with a rank indicator.
+                        //TODO: make a cleaner ranking process. This seems sloppy
                         TopFive.put(i, GetLocation(activity, results.getString("" + i)));
                     }
+                    // more generic error handling
+                    //TODO: implement better error handling
                 } catch (URISyntaxException usex) {
                     usex.printStackTrace();
                     Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
@@ -164,13 +187,17 @@ public class BotdServerOperations {
                         }
                     }
                 }
-
+                // Set the top vote data on the main activity UI. If we add pages, this is going to cause a problem.
+                //TODO: make a proper handler in the main activity, set the javashop data to a variable and have the
+                //TODO: handler pick it up and display if the main activity is active.
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
                         ((TextView) activity.findViewById(R.id.main_currentbotdnametext)).setText(TopFive.get(1).getName());
                         ((TextView) activity.findViewById(R.id.main_currentbotdaddresstext)).setText(TopFive.get(1).getVicinity());
                         activity.findViewById(R.id.main_currentbotdparent).setTag(TopFive.get(1));
+                        // default url is '---', and may not get set if the http request fails, so just doublecheck before
+                        // setting the onClick.
                         if (TopFive.get(1).getUrl().contains("http")) {
                             activity.findViewById(R.id.main_currentbotdparent).setOnClickListener(new View.OnClickListener() {
                                 @Override
@@ -186,6 +213,8 @@ public class BotdServerOperations {
         }.start();
     }
 
+    // secondary http request to the google places api. this resolves a reference code into all the other data
+    // we want to use, like name, vicinity, and url. The server only stores and returns id and ref.
     private static JavaShop GetLocation(Activity activity, String reference) {
         try {
             HttpClient client = new DefaultHttpClient();
@@ -212,7 +241,7 @@ public class BotdServerOperations {
 //
 //            for (int i = 0; i < ja.length(); i++) {
 //                JSONObject jo = (JSONObject) ja.get(i);
-//                tmpLocList.add(new com.mercapps.botd.Location(jo.getString("name"), jo.getString("reference"), jo.getString("vicinity")));
+//                tmpLocList.add(new com.tinyhydra.botd.Location(jo.getString("name"), jo.getString("reference"), jo.getString("vicinity")));
 //            }
 //            locationAdapter.refreshLocationList(tmpLocList);
         } catch (MalformedURLException e) {

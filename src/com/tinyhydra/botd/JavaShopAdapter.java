@@ -7,18 +7,22 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
+import java.net.BindException;
 import java.util.List;
 
 /**
- * Copyright © 2012 mercapps.com
+ * Copyright © 2012 tinyhydra.com
  */
+// The Vote() dialog ListView adapter.
 public class JavaShopAdapter extends BaseAdapter {
-
+    
     List<JavaShop> shopList;
 
     private LayoutInflater mInflater;
     Context context;
 
+    // default constructor. Sets the list of cafe's we got back from google places
+    // so we can turn them into ListView display objects
     public JavaShopAdapter(Context context, List<JavaShop> shopList) {
         this.context = context;
         this.shopList = shopList;
@@ -57,7 +61,11 @@ public class JavaShopAdapter extends BaseAdapter {
             holder = (ViewHolder) convertView.getTag();
         }
 
+        // Bind the JavaShop object to the Name View
         holder.shopName.setTag(getItem(position));
+        // Set the name & 'vicinity' which is google-places-speak for 'nearest address'
+        // note: address is available, but requires a separate http request, and
+        // returns more data than we need. Vicinity should be sufficient
         holder.shopName.setText(getItem(position).getName());
         holder.shopVicinity.setText(getItem(position).getVicinity());
 

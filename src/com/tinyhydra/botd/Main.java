@@ -33,7 +33,7 @@ import java.util.Calendar;
 import java.util.List;
 
 /**
- * Copyright © 2012 mercapps.com
+ * Copyright © 2012 tinyhydra.com
  */
 public class Main extends Activity {
 
@@ -41,34 +41,43 @@ public class Main extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+
+        // set the ListView adapter, for use in the vote dialog
         javaShopAdapter = new JavaShopAdapter(this, new ArrayList<JavaShop>());
+
+        // set location services, we'll use this later to find nearby coffee shops
         lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         ll = new BrewLocationListener();
         lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, ll);
-        cal = Calendar.getInstance();
-        handler = new Handler();
-        BotdServerOperations.GetTopFive(this, handler);
 
+        // Set local resources for use later on
+        handler = new Handler();
         voteButton = (ImageButton) findViewById(R.id.main_votebutton);
         dateText = (TextView) findViewById(R.id.main_datetext);
-
         maxDistance = getResources().getInteger(R.integer.maxdistance);
-        vDistance = maxDistance * 2;
-
-        //SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
-        SimpleDateFormat sdf = new SimpleDateFormat("EEEE, MMM d, yyyy");
-        dateText.setText(sdf.format(cal.getTimeInMillis()));
-
         settings = getSharedPreferences(Const.GenPrefs, 0);
         editor = settings.edit();
+        vShops = false;
+        // Set current date on the UI
+        cal = Calendar.getInstance();
+        SimpleDateFormat sdf = new SimpleDateFormat("EEEE, MMM d, yyyy");
+        dateText.setText(sdf.format(cal.getTimeInMillis()));
+        // We use distance to make sure you're in the right area to vote.
+        // Set default to double max. gps updates will override.
+        vDistance = maxDistance * 2;
+
+        // Get the current brew of the day from the server
+        BotdServerOperations.GetTopFive(this, handler);
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        // update current brew of the day from the server 
         BotdServerOperations.GetTopFive(this, handler);
     }
 
+    // Local variables
     SharedPreferences settings;
     SharedPreferences.Editor editor;
 
@@ -86,7 +95,7 @@ public class Main extends Activity {
 
     int maxDistance;
     int vDistance;
-    boolean vShops = false;
+    boolean vShops;
 
     // Initiating Menu XML file (menu.xml)
     @Override
@@ -103,6 +112,7 @@ public class Main extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.mainmenu_refresh:
+                // request current brew of the day (on demand) from server
                 BotdServerOperations.GetTopFive(this, handler);
                 return true;
             default:
@@ -118,6 +128,8 @@ public class Main extends Activity {
     }
 
     public void Vote() {
+        // If validation passes, pop up the vote dialog. This will show all nearby coffee shops
+        // and allow the user to select the one they'd like to vote for.
         final Dialog ld = new Dialog(this);
         ld.setContentView(R.layout.javashop_dialog);
         ld.setTitle("Select a location:");
@@ -126,7 +138,9 @@ public class Main extends Activity {
         ldList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                // Tag contains the JavaShop object associated with the current selection, it gets set in the adapter.
                 JavaShop javaShop = (JavaShop) view.findViewById(R.id.si_name).getTag();
+                // Send the vote to the server
                 BotdServerOperations.CastVote(Main.this, handler, account.name, javaShop.getId(), javaShop.getReference());
                 ld.hide();
             }
@@ -136,6 +150,8 @@ public class Main extends Activity {
 
     public void GetShops() {
         try {
+            // Use google places to get all the shops within '500' (I believe meters is the default measurement they use)
+            // make a list of JavaShops and pass it to the ListView adapter
             List<JavaShop> tmpLocList = new ArrayList<JavaShop>();
 
             HttpClient client = new DefaultHttpClient();
@@ -151,6 +167,7 @@ public class Main extends Activity {
             }
 
             JSONObject predictions = new JSONObject(sb.toString());
+            // Google passes back a status string. if we screw up, it won't say "OK". Alert the user.
             String jstatus = predictions.getString("status");
             if (!jstatus.equals("OK")) {
                 handler.post(new Runnable() {
@@ -161,8 +178,11 @@ public class Main extends Activity {
                 });
                 return;
             }
+            // if all is well, set this section as a pass.
             vShops = true;
 
+            // This section may fail if there's no results, but we'll just display an empty list.
+            //TODO: alert the user and cancel the dialog if this fails
             JSONArray ja = new JSONArray(predictions.getString("results"));
 
             for (int i = 0; i < ja.length(); i++) {
@@ -186,6 +206,9 @@ public class Main extends Activity {
 
     public void getDistanceFromOrigin() {
         try {
+            // This section evaluates the user's distance from 'origin' as defined in res/values/origins.xml
+            // and evaluates it against maxdistance, as defined in res/values/values.xml
+            //TODO: figure out why this isn't working on my phone in magnolia. No route? Rough Location vs Fine Location?
             HttpClient client = new DefaultHttpClient();
             HttpGet request = new HttpGet();
             request.setURI(new URI("http://maps.googleapis.com/maps/api/distancematrix/json?origins=Seattle&destinations=" + lat + "," + lng + "&mode=bicycling&sensor=true"));
@@ -198,6 +221,8 @@ public class Main extends Activity {
                 sb.append(line);
             }
 
+            // In the event of some kind of problem, google will return a status other than "OK".
+            // if all is well, grab the distance, otherwise let the user know something's up.
             JSONObject distanceInfo = new JSONObject(sb.toString());
             String status = distanceInfo.getString("status");
             if (status.equals("OK")) {
@@ -244,7 +269,8 @@ public class Main extends Activity {
 
     private void Validate() {
         vDistance = maxDistance * 2;
-
+        // Check the account to make sure we can read it. We use the user's google account to prevent multiple votes
+        // check the distance, and grab nearby shops, then launch the listview dialog with Vote();
         new Thread() {
             @Override
             public void run() {
@@ -276,7 +302,7 @@ public class Main extends Activity {
     }
 
     public class BrewLocationListener implements LocationListener {
-
+        //Default GPS location listener.
         @Override
         public void onLocationChanged(Location loc) {
             lat = Double.toString(loc.getLatitude());
