@@ -8,7 +8,6 @@ import android.os.Handler;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -16,7 +15,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -168,16 +166,36 @@ public class BotdServerOperations {
                     //TODO: implement better error handling
                 } catch (URISyntaxException usex) {
                     usex.printStackTrace();
-                    Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
+                        }
+                    });
                 } catch (ClientProtocolException cpex) {
                     cpex.printStackTrace();
-                    Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
+                        }
+                    });
                 } catch (IOException iex) {
                     iex.printStackTrace();
-                    Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
+                        }
+                    });
                 } catch (JSONException jex) {
                     jex.printStackTrace();
-                    Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
+                        }
+                    });
                 } finally {
                     if (in != null) {
                         try {

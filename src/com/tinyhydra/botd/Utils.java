@@ -1,12 +1,10 @@
 package com.tinyhydra.botd;
 
 import android.app.Activity;
-import android.content.Context;
 import android.util.DisplayMetrics;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.TimeZone;
 
 /**
  * Copyright © 2012 tinyhydra.com
@@ -16,17 +14,14 @@ public class Utils {
     // not the server's date. Potential for problems is low, but -
     // TODO: get server date instead of phone date.
     public static long GetDate() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-        Calendar ca = Calendar.getInstance();
-        String date = ca.get(Calendar.YEAR) + "/" + (ca.get(Calendar.MONTH) + 1) + "/" + ca.get(Calendar.DAY_OF_MONTH);
-        java.util.Date newDate = null;
-        try {
-            newDate = sdf.parse(date);
-        } catch (ParseException pex) {
-            pex.printStackTrace();
-        }
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
 
-        return newDate.getTime();
+        return cal.getTimeInMillis();
     }
 
     // not implemented. this section will help determine the screen size so we can download

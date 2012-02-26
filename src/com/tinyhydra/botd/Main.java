@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -26,7 +27,9 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.*;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -49,6 +52,10 @@ public class Main extends Activity {
         lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         ll = new BrewLocationListener();
         lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, ll);
+        currentLoc = lm.getLastKnownLocation(lm.getBestProvider(new Criteria(), true));
+        origin = new Location(lm.getBestProvider(new Criteria(), false));
+        origin.setLatitude(Double.parseDouble(this.getResources().getString(R.string.seattlelat)));
+        origin.setLongitude(Double.parseDouble(this.getResources().getString(R.string.seattlelng)));
 
         // Set local resources for use later on
         handler = new Handler();
@@ -83,8 +90,8 @@ public class Main extends Activity {
 
     LocationManager lm;
     LocationListener ll;
-    String lat;
-    String lng;
+    Location currentLoc;
+    Location origin;
     JavaShopAdapter javaShopAdapter;
     Account account;
     Calendar cal;
@@ -156,7 +163,7 @@ public class Main extends Activity {
 
             HttpClient client = new DefaultHttpClient();
             HttpGet request = new HttpGet();
-            request.setURI(new URI("https://maps.googleapis.com/maps/api/place/search/json?location=" + lat + "," + lng + "&radius=500&types=cafe&sensor=true&key=" + getResources().getString(R.string.google_api_key)));
+            request.setURI(new URI("https://maps.googleapis.com/maps/api/place/search/json?location=" + currentLoc.getLatitude() + "," + currentLoc.getLongitude() + "&radius=500&types=cafe&sensor=true&key=" + getResources().getString(R.string.google_api_key)));
             HttpResponse response = client.execute(request);
             BufferedReader in = new BufferedReader
                     (new InputStreamReader(response.getEntity().getContent()));
@@ -205,66 +212,7 @@ public class Main extends Activity {
     }
 
     public void getDistanceFromOrigin() {
-        try {
-            // This section evaluates the user's distance from 'origin' as defined in res/values/origins.xml
-            // and evaluates it against maxdistance, as defined in res/values/values.xml
-            //TODO: figure out why this isn't working on my phone in magnolia. No route? Rough Location vs Fine Location?
-            HttpClient client = new DefaultHttpClient();
-            HttpGet request = new HttpGet();
-            request.setURI(new URI("http://maps.googleapis.com/maps/api/distancematrix/json?origins=Seattle&destinations=" + lat + "," + lng + "&mode=bicycling&sensor=true"));
-            HttpResponse response = client.execute(request);
-            BufferedReader in = new BufferedReader
-                    (new InputStreamReader(response.getEntity().getContent()));
-            StringBuffer sb = new StringBuffer("");
-            String line = "";
-            while ((line = in.readLine()) != null) {
-                sb.append(line);
-            }
-
-            // In the event of some kind of problem, google will return a status other than "OK".
-            // if all is well, grab the distance, otherwise let the user know something's up.
-            JSONObject distanceInfo = new JSONObject(sb.toString());
-            String status = distanceInfo.getString("status");
-            if (status.equals("OK")) {
-                JSONArray ja = distanceInfo.getJSONArray("rows").getJSONObject(0).getJSONArray("elements");
-                for (int i = 0; i < ja.length(); i++) {
-                    if (ja.getJSONObject(i).has("distance"))
-                        vDistance = ja.getJSONObject(i).getJSONObject("distance").getInt("value");
-                }
-            } else {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getApplicationContext(), "There was a problem determining your location. Please check your phone & GPS signal and try again. Voting is disabled.", Toast.LENGTH_LONG).show();
-                    }
-                });
-            }
-            if (vDistance > maxDistance)
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getApplicationContext(), "You seem to be outside the Seattle area, please try again from a location closer to the Emerald City. Voting is disabled.", Toast.LENGTH_LONG).show();
-                    }
-                });
-
-        } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (URISyntaxException usex) {
-            usex.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getApplicationContext(), "Error fetching location. Voting is disabled.", Toast.LENGTH_SHORT).show();
-                }
-            });
-            e.printStackTrace();
-        }
+        vDistance = Math.round(currentLoc.distanceTo(origin));
     }
 
     private void Validate() {
@@ -305,8 +253,7 @@ public class Main extends Activity {
         //Default GPS location listener.
         @Override
         public void onLocationChanged(Location loc) {
-            lat = Double.toString(loc.getLatitude());
-            lng = Double.toString(loc.getLongitude());
+            currentLoc = loc;
         }
 
         @Override
