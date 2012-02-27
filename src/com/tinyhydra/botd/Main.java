@@ -4,6 +4,7 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.Criteria;
@@ -11,7 +12,9 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Debug;
 import android.os.Handler;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -55,6 +58,7 @@ public class Main extends Activity {
         origin = new Location(lm.getBestProvider(new Criteria(), false));
         origin.setLatitude(Double.parseDouble(this.getResources().getString(R.string.seattlelat)));
         origin.setLongitude(Double.parseDouble(this.getResources().getString(R.string.seattlelng)));
+        locationUpdating = false;
 
         // Set local resources for use later on
         handler = new Handler();
@@ -92,6 +96,8 @@ public class Main extends Activity {
     LocationListener ll;
     Location currentLoc;
     Location origin;
+    boolean locationUpdating;
+    ProgressDialog validatePD;
     JavaShopAdapter javaShopAdapter;
     Account account;
     Calendar cal;
@@ -176,7 +182,15 @@ public class Main extends Activity {
             JSONObject predictions = new JSONObject(sb.toString());
             // Google passes back a status string. if we screw up, it won't say "OK". Alert the user.
             String jstatus = predictions.getString("status");
-            if (!jstatus.equals("OK")) {
+            if (jstatus.equals("ZERO_RESULTS")) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), "No shops found in your area.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                return false;
+            } else if (!jstatus.equals("OK")) {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -217,6 +231,9 @@ public class Main extends Activity {
         vDistance = maxDistance * 2;
         // Check the account to make sure we can read it. We use the user's google account to prevent multiple votes
         // check the distance, and grab nearby shops, then launch the listview dialog with Vote();
+        validatePD = new ProgressDialog(this);
+        validatePD.setMessage("Please wait");
+        validatePD.show();
         new Thread() {
             @Override
             public void run() {
@@ -230,28 +247,70 @@ public class Main extends Activity {
                             @Override
                             public void run() {
                                 Toast.makeText(getApplicationContext(), "There was an error retrieving your google account information. Voting is disabled.", Toast.LENGTH_SHORT).show();
+                                validatePD.dismiss();
                             }
                         });
                         return;
                     }
-
-                    lm.requestLocationUpdates(lm.getBestProvider(new Criteria(), true), 0, 0, new BrewLocationListener() {
+                }
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        validatePD.setMessage("Updating location");
+                    }
+                });
+                locationUpdating = true;
+                lm.requestLocationUpdates(lm.getBestProvider(new Criteria(), true), 0, 0, ll);
+                int count = 0;
+                while (count < 10 && locationUpdating) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException iex) {
+                        Log.e("Location Update", "Interrupted waiting for location update");
+                    }
+                    count++;
+                }
+                if (locationUpdating) {
+                    locationUpdating = false;
+                    handler.post(new Runnable() {
                         @Override
-                        public void onLocationChanged(Location loc) {
-                            super.onLocationChanged(loc);
-                            if (vDistance < maxDistance) {
-                                if (GetShops())
-                                    Vote();
-                            } else
-                                handler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        Toast.makeText(getApplicationContext(), "You seem to be outside the Seattle area. Please try again from a location closer to the Emerald City.", Toast.LENGTH_LONG).show();
-                                    }
-                                });
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), "Unable to update location at this time. Please check phone & GPS signal", Toast.LENGTH_LONG).show();
+                            validatePD.dismiss();
+                        }
+                    });
+                    return;
+                }
+                if (vDistance < maxDistance) {
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            validatePD.setMessage("Getting nearby cafe locations");
+                        }
+                    });
+                    if (GetShops()) {
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Vote();
+                            }
+                        });
+                    }
+                } else {
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), "You seem to be outside the Seattle area. Please try again from a location closer to the Emerald City.", Toast.LENGTH_LONG).show();
                         }
                     });
                 }
+
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        validatePD.dismiss();
+                    }
+                });
             }
         }.start();
     }
@@ -262,6 +321,7 @@ public class Main extends Activity {
         public void onLocationChanged(Location loc) {
             currentLoc = loc;
             vDistance = Math.round(currentLoc.distanceTo(origin));
+            locationUpdating = false;
         }
 
         @Override
