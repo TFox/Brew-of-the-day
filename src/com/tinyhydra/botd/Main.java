@@ -51,7 +51,6 @@ public class Main extends Activity {
         // set location services, we'll use this later to find nearby coffee shops
         lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         ll = new BrewLocationListener();
-        lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, ll);
         currentLoc = lm.getLastKnownLocation(lm.getBestProvider(new Criteria(), true));
         origin = new Location(lm.getBestProvider(new Criteria(), false));
         origin.setLatitude(Double.parseDouble(this.getResources().getString(R.string.seattlelat)));
@@ -82,6 +81,7 @@ public class Main extends Activity {
         super.onResume();
         // update current brew of the day from the server 
         BotdServerOperations.GetTopFive(this, handler);
+        lm.requestLocationUpdates(lm.getBestProvider(new Criteria(), true), 0, 0, ll);
     }
 
     // Local variables
@@ -155,7 +155,7 @@ public class Main extends Activity {
         ld.show();
     }
 
-    public void GetShops() {
+    public boolean GetShops() {
         try {
             // Use google places to get all the shops within '500' (I believe meters is the default measurement they use)
             // make a list of JavaShops and pass it to the ListView adapter
@@ -183,7 +183,7 @@ public class Main extends Activity {
                         Toast.makeText(getApplicationContext(), "Error retrieving local shops.", Toast.LENGTH_SHORT).show();
                     }
                 });
-                return;
+                return false;
             }
             // if all is well, set this section as a pass.
             vShops = true;
@@ -197,6 +197,7 @@ public class Main extends Activity {
                 tmpLocList.add(new JavaShop(jo.getString("name"), jo.getString("id"), "", jo.getString("reference"), jo.getString("vicinity")));
             }
             javaShopAdapter.refreshShopList(tmpLocList);
+            return true;
         } catch (MalformedURLException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -209,10 +210,7 @@ public class Main extends Activity {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-    }
-
-    public void getDistanceFromOrigin() {
-        vDistance = Math.round(currentLoc.distanceTo(origin));
+        return false;
     }
 
     private void Validate() {
@@ -222,29 +220,38 @@ public class Main extends Activity {
         new Thread() {
             @Override
             public void run() {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (account == null) {
-                            Account[] accounts = AccountManager.get(getApplicationContext()).getAccountsByType("com.google");
-                            if (accounts.length > 0) {
-                                account = accounts[0];
-                            } else {
-                                account = null;
+                if (account == null) {
+                    Account[] accounts = AccountManager.get(getApplicationContext()).getAccountsByType("com.google");
+                    if (accounts.length > 0) {
+                        account = accounts[0];
+                    } else {
+                        account = null;
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
                                 Toast.makeText(getApplicationContext(), "There was an error retrieving your google account information. Voting is disabled.", Toast.LENGTH_SHORT).show();
-                                return;
                             }
-                        }
-
-                        getDistanceFromOrigin();
-                        if (vDistance > maxDistance)
-                            return;
-
-                        GetShops();
-                        if (account != null && vShops)
-                            Vote();
+                        });
+                        return;
                     }
-                });
+
+                    lm.requestLocationUpdates(lm.getBestProvider(new Criteria(), true), 0, 0, new BrewLocationListener() {
+                        @Override
+                        public void onLocationChanged(Location loc) {
+                            super.onLocationChanged(loc);
+                            if (vDistance < maxDistance) {
+                                if (GetShops())
+                                    Vote();
+                            } else
+                                handler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(getApplicationContext(), "You seem to be outside the Seattle area. Please try again from a location closer to the Emerald City.", Toast.LENGTH_LONG).show();
+                                    }
+                                });
+                        }
+                    });
+                }
             }
         }.start();
     }
@@ -254,22 +261,22 @@ public class Main extends Activity {
         @Override
         public void onLocationChanged(Location loc) {
             currentLoc = loc;
+            vDistance = Math.round(currentLoc.distanceTo(origin));
         }
 
         @Override
         public void onProviderDisabled(String provider) {
-            Toast.makeText(getApplicationContext(), "Gps Disabled", Toast.LENGTH_SHORT).show();
+
         }
 
         @Override
         public void onProviderEnabled(String provider) {
-            Toast.makeText(getApplicationContext(), "Gps Enabled", Toast.LENGTH_SHORT).show();
+
         }
 
         @Override
         public void onStatusChanged(String provider, int status, Bundle extras) {
 
         }
-
     }
 }
