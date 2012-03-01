@@ -233,7 +233,7 @@ public class BotdServerOperations {
 
     // secondary http request to the google places api. this resolves a reference code into all the other data
     // we want to use, like name, vicinity, and url. The server only stores and returns id and ref.
-    private static JavaShop GetLocation(Activity activity, String reference) {
+    public static JavaShop GetLocation(Activity activity, String reference) {
         try {
             HttpClient client = new DefaultHttpClient();
             HttpGet request = new HttpGet();
@@ -253,15 +253,6 @@ public class BotdServerOperations {
                 JSONObject resultObj = results.getJSONObject("result");
                 return new JavaShop(resultObj.getString("name"), resultObj.getString("id"), resultObj.getString("url"), reference, resultObj.getString("vicinity"));
             }
-//            vLocations = true;
-//
-//            JSONArray ja = new JSONArray(predictions.getString("results"));
-//
-//            for (int i = 0; i < ja.length(); i++) {
-//                JSONObject jo = (JSONObject) ja.get(i);
-//                tmpLocList.add(new com.tinyhydra.botd.Location(jo.getString("name"), jo.getString("reference"), jo.getString("vicinity")));
-//            }
-//            locationAdapter.refreshLocationList(tmpLocList);
         } catch (MalformedURLException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

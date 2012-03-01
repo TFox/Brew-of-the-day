@@ -13,6 +13,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Debug;
 import android.os.Handler;
@@ -151,12 +152,15 @@ public class Main extends Activity {
             TextView gpsDisabledText = new TextView(ldParent.getContext());
             gpsDisabledText.setText("Need more accurate results?");
             gpsDisabledText.setTypeface(Typeface.defaultFromStyle(Typeface.ITALIC));
+            gpsDisabledText.setTextColor(getResources().getColor(R.color.creme));
             gpsDisabledText.setLayoutParams(vlp);
             gpsDisabledText.setGravity(Gravity.CENTER_HORIZONTAL);
             ldParent.addView(gpsDisabledText);
             Button enableGpsButton = new Button(ldParent.getContext());
             enableGpsButton.setLayoutParams(vlp);
             enableGpsButton.setText("Enable GPS");
+            enableGpsButton.setBackgroundDrawable(getResources().getDrawable(R.drawable.creme_button));
+            enableGpsButton.setTextColor(getResources().getColor(R.color.espresso));
             enableGpsButton.setGravity(Gravity.CENTER_HORIZONTAL);
             enableGpsButton.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -174,10 +178,29 @@ public class Main extends Activity {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 // Tag contains the JavaShop object associated with the current selection, it gets set in the adapter.
-                JavaShop javaShop = (JavaShop) view.findViewById(R.id.si_name).getTag();
-                // Send the vote to the server
-                BotdServerOperations.CastVote(Main.this, handler, account.name, javaShop.getId(), javaShop.getReference());
-                ld.hide();
+                final JavaShop javaShop = (JavaShop) view.findViewById(R.id.si_name).getTag();
+
+                final Dialog confirmDialog = new Dialog(Main.this);
+                confirmDialog.setContentView(R.layout.vote_confirmation_dialog);
+                confirmDialog.setTitle("Cast vote for:");
+                ((TextView) confirmDialog.findViewById(R.id.cd_vote_nametext)).setText(javaShop.getName());
+                Button confirmButton = (Button) confirmDialog.findViewById(R.id.cd_confirmbutton);
+                Button cancelButton = (Button) confirmDialog.findViewById(R.id.cd_cancelbutton);
+                confirmButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        BotdServerOperations.CastVote(Main.this, handler, account.name, javaShop.getId(), javaShop.getReference());
+                        confirmDialog.dismiss();
+                        ld.dismiss();
+                    }
+                });
+                cancelButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        confirmDialog.dismiss();
+                    }
+                });
+                confirmDialog.show();
             }
         });
         ld.show();

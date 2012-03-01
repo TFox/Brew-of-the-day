@@ -1,4 +1,6 @@
 <resources>
     <color name="creme">#eadec8</color>
     <color name="espresso">#4a330d</color>
+    <color name="creme_dark">#D9C49E</color>
+    <color name="espresso_light">#75592B</color>
 </resources>

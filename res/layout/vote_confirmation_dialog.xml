@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/sd_parent"
+              android:background="@color/creme"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+              android:gravity="center_horizontal"
+              android:orientation="vertical">
+    <TextView android:id="@+id/cd_vote_nametext"
+              android:layout_width="fill_parent"
+              android:layout_height="wrap_content"
+              android:padding="5dp"
+              android:textColor="@color/espresso"
+              android:textSize="20dp"
+              android:textStyle="bold"
+              android:gravity="center_horizontal"/>
+    <LinearLayout android:layout_height="wrap_content"
+                  android:layout_width="fill_parent"
+                  android:gravity="center_horizontal">
+        <Button android:id="@+id/cd_confirmbutton"
+                android:background="@drawable/espresso_button"
+                android:layout_height="wrap_content"
+                android:layout_width="100dp"
+                android:textColor="@color/creme"
+                android:text="Confirm"/>
+        <Button android:id="@+id/cd_cancelbutton"
+                android:background="@drawable/espresso_button"
+                android:layout_height="wrap_content"
+                android:layout_width="100dp"
+                android:textColor="@color/creme"
+                android:text="Cancel"/>
+    </LinearLayout>
+    <!--<Button android:id="@+id/cd_openplacespagebutton"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:layout_width="200dp"-->
+    <!--android:text="Open places page"/>-->
+</LinearLayout>
