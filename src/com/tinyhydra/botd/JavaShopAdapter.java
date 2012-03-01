@@ -14,7 +14,7 @@ import java.util.List;
  */
 // The Vote() dialog ListView adapter.
 public class JavaShopAdapter extends BaseAdapter {
-    
+
     List<JavaShop> shopList;
 
     private LayoutInflater mInflater;
@@ -30,7 +30,6 @@ public class JavaShopAdapter extends BaseAdapter {
 
     public void refreshShopList(List<JavaShop> shopList) {
         this.shopList = shopList;
-        notifyDataSetChanged();
     }
 
     public int getCount() {

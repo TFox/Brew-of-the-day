@@ -6,7 +6,9 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -14,10 +16,9 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Debug;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
+import android.view.*;
 import android.widget.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -30,9 +31,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -85,7 +84,6 @@ public class Main extends Activity {
         super.onResume();
         // update current brew of the day from the server 
         BotdServerOperations.GetTopFive(this, handler);
-        lm.requestLocationUpdates(lm.getBestProvider(new Criteria(), true), 0, 0, ll);
     }
 
     // Local variables
@@ -146,6 +144,30 @@ public class Main extends Activity {
         final Dialog ld = new Dialog(this);
         ld.setContentView(R.layout.javashop_dialog);
         ld.setTitle("Select a location:");
+        if (!lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)) {
+            LinearLayout ldParent = (LinearLayout) ld.findViewById(R.id.sd_parent);
+            LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+            TextView gpsDisabledText = new TextView(ldParent.getContext());
+            gpsDisabledText.setText("Need more accurate results?");
+            gpsDisabledText.setTypeface(Typeface.defaultFromStyle(Typeface.ITALIC));
+            gpsDisabledText.setLayoutParams(vlp);
+            gpsDisabledText.setGravity(Gravity.CENTER_HORIZONTAL);
+            ldParent.addView(gpsDisabledText);
+            Button enableGpsButton = new Button(ldParent.getContext());
+            enableGpsButton.setLayoutParams(vlp);
+            enableGpsButton.setText("Enable GPS");
+            enableGpsButton.setGravity(Gravity.CENTER_HORIZONTAL);
+            enableGpsButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent i = new Intent(Settings.ACTION_SECURITY_SETTINGS);
+                    startActivity(i);
+                    ld.dismiss();
+                }
+            });
+            ldParent.addView(enableGpsButton);
+        }
         ListView ldList = (ListView) ld.findViewById(R.id.sd_listview);
         ldList.setAdapter(javaShopAdapter);
         ldList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -169,7 +191,10 @@ public class Main extends Activity {
 
             HttpClient client = new DefaultHttpClient();
             HttpGet request = new HttpGet();
-            request.setURI(new URI("https://maps.googleapis.com/maps/api/place/search/json?location=" + currentLoc.getLatitude() + "," + currentLoc.getLongitude() + "&radius=500&types=cafe&sensor=true&key=" + getResources().getString(R.string.google_api_key)));
+            int accuracy = Math.round(currentLoc.getAccuracy());
+            if (accuracy < 500)
+                accuracy = 500;
+            request.setURI(URI.create("https://maps.googleapis.com/maps/api/place/search/json?location=" + currentLoc.getLatitude() + "," + currentLoc.getLongitude() + "&radius=" + accuracy + "&types=" + URLEncoder.encode("cafe|restaurant|food", "UTF-8") + "&keyword=coffee&sensor=true&key=" + getResources().getString(R.string.google_api_key)));
             HttpResponse response = client.execute(request);
             BufferedReader in = new BufferedReader
                     (new InputStreamReader(response.getEntity().getContent()));
@@ -215,8 +240,6 @@ public class Main extends Activity {
         } catch (MalformedURLException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
-        } catch (URISyntaxException usex) {
-            usex.printStackTrace();
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -253,14 +276,17 @@ public class Main extends Activity {
                         return;
                     }
                 }
+                locationUpdating = true;
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
                         validatePD.setMessage("Updating location");
+                        if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER))
+                            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, ll);
+                        else
+                            lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, ll);
                     }
                 });
-                locationUpdating = true;
-                lm.requestLocationUpdates(lm.getBestProvider(new Criteria(), true), 0, 0, ll);
                 int count = 0;
                 while (count < 10 && locationUpdating) {
                     try {
@@ -268,6 +294,14 @@ public class Main extends Activity {
                     } catch (InterruptedException iex) {
                         Log.e("Location Update", "Interrupted waiting for location update");
                     }
+                    if (count == 5 && lm.isProviderEnabled(LocationManager.GPS_PROVIDER))
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "GPS signal unavailable. Using Network locator", Toast.LENGTH_SHORT).show();
+                                lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, ll);
+                            }
+                        });
                     count++;
                 }
                 if (locationUpdating) {
