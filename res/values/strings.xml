@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">BrewOfTheDay</string>
+    <string name="app_name">Brew of the day</string>
+    <string name="version">0.1b</string>
     <string name="ok">OK</string>
     <string name="refresh">Refresh</string>
 </resources>

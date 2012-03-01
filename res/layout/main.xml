@@ -11,6 +11,7 @@
               android:layout_width="fill_parent"
               android:layout_height="wrap_content"
               style="@style/OverlayText"
+              android:textStyle="bold"
               android:text="Seattle's favorite"/>
     <TextView android:id="@+id/main_brewtext"
               android:layout_below="@id/main_loctext"
@@ -19,6 +20,7 @@
               android:layout_height="wrap_content"
               style="@style/OverlayText"
               android:textSize="30dp"
+              android:textStyle="bold"
               android:text="Brew of the day"/>
     <TextView android:id="@+id/main_datetext"
               android:layout_height="wrap_content"
@@ -68,5 +70,11 @@
                      android:layout_width="wrap_content"
                      android:onClick="Vote"/>
     </LinearLayout>
+    <TextView android:layout_height="wrap_content"
+              android:layout_width="fill_parent"
+              android:layout_alignParentBottom="true"
+              android:textColor="@color/espresso"
+              android:gravity="right"
+              android:text="©copyright 2012 tinyhydra.com"/>
 </RelativeLayout>
 
