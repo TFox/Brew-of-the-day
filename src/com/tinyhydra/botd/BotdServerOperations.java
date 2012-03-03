@@ -1,14 +1,9 @@
 package com.tinyhydra.botd;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -27,7 +22,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -105,14 +99,19 @@ public class BotdServerOperations {
         List<JavaShop> shopList = new ArrayList<JavaShop>();
         try {
             JSONArray results = new JSONArray(shopJson);
-            for (int i = 0; i < results.length(); i++) {
+            for (int i = 0; i < 10; i++) {
                 // get JavaShop object and add it to the array with a rank indicator.
                 //TODO: make a cleaner ranking process. This seems sloppy
-                JavaShop tmpJS = GetLocation(placesApiKey, results.getJSONObject(i).getString(JSONvalues.shopRef.toString()));
-                tmpJS.votes = Integer.parseInt(results.getJSONObject(i).getString(JSONvalues.shopVotes.toString()));
+                JavaShop tmpJS;
+                if (i > results.length() - 1)
+                    tmpJS = new JavaShop();
+                else {
+                    tmpJS = GetLocation(placesApiKey, results.getJSONObject(i).getString(JSONvalues.shopRef.toString()));
+                    tmpJS.votes = Integer.parseInt(results.getJSONObject(i).getString(JSONvalues.shopVotes.toString()));
+                }
                 shopList.add(tmpJS);
-                SortShopList(shopList);
             }
+            SortShopList(shopList);
         } catch (JSONException jex) {
         }
         return shopList;
@@ -152,7 +151,7 @@ public class BotdServerOperations {
     //TODO: implement 'top 5' listview activity to implement this code. Would also be helpful to
     //TODO: show the user's current shop vote & maybe vote history.
     public static void GetTopTen(final Activity activity, final Handler handler) {
-        final SharedPreferences settings = activity.getSharedPreferences(Const.VotePrefs, 0);
+        final SharedPreferences settings = activity.getSharedPreferences(Const.GenPrefs, 0);
         final List<JavaShop> TopTen = new ArrayList<JavaShop>();
         if (settings.getLong(Const.LastTopTenQueryTime, 0) > (Calendar.getInstance().getTimeInMillis() - 180000)) {
             Message msg = new Message();

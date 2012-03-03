@@ -4,4 +4,6 @@
     <color name="creme_dark">#D9C49E</color>
     <color name="espresso_light">#75592B</color>
     <color name="transparent">#00000000</color>
+    <color name="transparent_creme">#aaeadec8</color>
+    <color name="transparent_espresso">#aa4a330d</color>
 </resources>

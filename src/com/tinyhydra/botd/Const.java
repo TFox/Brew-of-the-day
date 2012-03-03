@@ -8,8 +8,6 @@ package com.tinyhydra.botd;
 //TODO: it's probably better to set them in values.xml. Food for thought
 public class Const {
     public final static String GenPrefs = "BotdGenPrefs";
-    public final static String VotePrefs = "BotdVotePrefs";
-    public final static String ShopListPrefs = "BotdVotePrefs";
 
     public final static String LastVoteDate = "LastVoteDate";
     public final static String LastVotedFor = "LastVotedFor";

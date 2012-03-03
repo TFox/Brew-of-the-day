@@ -15,25 +15,16 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Debug;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.*;
+import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
 import android.widget.*;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -154,6 +145,10 @@ public class Main extends Activity {
             case R.id.mainmenu_refresh:
                 // request current brew of the day (on demand) from server
                 BotdServerOperations.GetTopTen(this, handler);
+                return true;
+            case R.id.mainmenu_topten:
+                Intent i = new Intent(Main.this, TopTenList.class);
+                startActivity(i);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

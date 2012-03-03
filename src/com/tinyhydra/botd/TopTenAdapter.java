@@ -4,7 +4,8 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.*;
+import android.widget.BaseAdapter;
+import android.widget.TextView;
 
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class TopTenAdapter extends BaseAdapter {
 
     public void refreshTopTenList(List<JavaShop> topTenList) {
         this.topTenList = topTenList;
+        notifyDataSetInvalidated();
     }
 
     public int getCount() {
@@ -63,7 +65,7 @@ public class TopTenAdapter extends BaseAdapter {
         // returns more data than we need. Vicinity should be sufficient
         holder.shopName.setText(getItem(position).getName());
         holder.shopVicinity.setText(getItem(position).getVicinity());
-        holder.voteCount.setText(getItem(position).getVotes());
+        holder.voteCount.setText(Integer.toString(getItem(position).getVotes()));
 
         return convertView;
     }

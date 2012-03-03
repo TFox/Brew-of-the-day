@@ -1,14 +1,19 @@
 package com.tinyhydra.botd;
 
 import android.app.Activity;
-import android.app.Dialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.View;
-import android.widget.*;
+import android.widget.AdapterView;
+import android.widget.ListView;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -28,39 +33,44 @@ public class TopTenList extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.topten);
-        ListView ldList = (ListView) findViewById(R.layout.topten);
-        ldList.setAdapter(new TopTenAdapter(this,BotdServerOperations.GetTopTen(this,handler)));
+
+        settings = getSharedPreferences(Const.GenPrefs, 0);
+        editor = settings.edit();
+
+        shopList = new ArrayList<JavaShop>();
+        topTenAdapter = new TopTenAdapter(this, shopList);
+
+        ldList = (ListView) findViewById(R.id.topten_parent);
+        ldList.setAdapter(topTenAdapter);
         ldList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-
+                JavaShop javaShop = (JavaShop) view.findViewById(R.id.tt_nametext).getTag();
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(javaShop.getUrl()));
+                startActivity(browserIntent);
             }
         });
+        BotdServerOperations.GetTopTen(this, handler);
     }
+
+    SharedPreferences settings;
+    SharedPreferences.Editor editor;
+
+    TopTenAdapter topTenAdapter;
+    List<JavaShop> shopList;
+    ListView ldList;
 
     final Handler handler = new Handler() {
         @Override
         public void handleMessage(Message message) {
             switch (message.arg1) {
                 case Const.CODE_SHOWTOAST:
-                    Toast.makeText(Main.this, message.getData().getString(Const.MessageToastString), message.arg2).show();
+                    Toast.makeText(getApplicationContext(), message.getData().getString(Const.MessageToastString), message.arg2).show();
                     break;
                 case Const.CODE_GETTOPTEN:
-                    final JavaShop topShop = BotdServerOperations.ParseShopJSON(settings.getString(Const.LastTopTenQueryResults, ""), getResources().getString(R.string.google_api_key)).get(0);
-                    brewOfTheDayName.setText(topShop.getName());
-                    brewOfTheDayVicinity.setText(topShop.getVicinity());
-                    findViewById(R.id.main_currentbotdparent).setTag(topShop);
-                    // default url is '---', and may not get set if the http request fails, so just doublecheck before
-                    // setting the onClick.
-                    if (topShop.getUrl().contains("http")) {
-                        findViewById(R.id.main_currentbotdparent).setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(topShop.getUrl()));
-                                startActivity(browserIntent);
-                            }
-                        });
-                    }
+                    shopList = BotdServerOperations.ParseShopJSON(settings.getString(Const.LastTopTenQueryResults, ""), getResources().getString(R.string.google_api_key));
+                    topTenAdapter.refreshTopTenList(shopList);
+                    break;
             }
         }
     };
