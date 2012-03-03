@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -15,6 +17,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -22,7 +25,10 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Copyright © 2012 tinyhydra.com
@@ -61,183 +67,173 @@ public class BotdServerOperations {
                         sb.append((char) ch);
                     }
                     if (sb.toString().equals("0")) {
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(activity.getApplicationContext(), "Vote cast!", Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                        Utils.PostToastMessageToHandler(handler, "Vote cast!", Toast.LENGTH_SHORT);
                         // Set a local flag to prevent duplicate voting
                         SharedPreferences settings = activity.getSharedPreferences(Const.GenPrefs, 0);
                         SharedPreferences.Editor editor = settings.edit();
                         editor.putLong(Const.LastVoteDate, Utils.GetDate());
                         editor.commit();
                     } else {
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                // The user shouldn't see this. The above SharedPreferences code will be evaluated
-                                // when the user hits the Vote button. If the user gets sneaky and deletes local data though,
-                                // the server will catch the duplicate vote based on the user's email address and send back a '1'.
-                                Toast.makeText(activity.getApplicationContext(), "Vote refused. You've probably already voted today.", Toast.LENGTH_LONG).show();
-                            }
-                        });
+                        // The user shouldn't see this. The above SharedPreferences code will be evaluated
+                        // when the user hits the Vote button. If the user gets sneaky and deletes local data though,
+                        // the server will catch the duplicate vote based on the user's email address and send back a '1'.
+                        Utils.PostToastMessageToHandler(handler, "Vote refused. You've probably already voted today.", Toast.LENGTH_LONG);
                     }
                     // Catch blocks. Return a generic error if anything goes wrong.
                     //TODO: implement some better/more appropriate error handling.
                 } catch (URISyntaxException usex) {
                     usex.printStackTrace();
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(activity.getApplicationContext(), "There was a problem submitting your vote. Poor signal? Please try again.", Toast.LENGTH_LONG).show();
-                        }
-                    });
+                    Utils.PostToastMessageToHandler(handler, "There was a problem submitting your vote. Poor signal? Please try again.", Toast.LENGTH_LONG);
                 } catch (UnsupportedEncodingException ueex) {
                     ueex.printStackTrace();
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(activity.getApplicationContext(), "There was a problem submitting your vote. Poor signal? Please try again.", Toast.LENGTH_LONG).show();
-                        }
-                    });
+                    Utils.PostToastMessageToHandler(handler, "There was a problem submitting your vote. Poor signal? Please try again.", Toast.LENGTH_LONG);
                 } catch (ClientProtocolException cpex) {
                     cpex.printStackTrace();
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(activity.getApplicationContext(), "There was a problem submitting your vote. Poor signal? Please try again.", Toast.LENGTH_LONG).show();
-                        }
-                    });
+                    Utils.PostToastMessageToHandler(handler, "There was a problem submitting your vote. Poor signal? Please try again.", Toast.LENGTH_LONG);
                 } catch (IOException ioex) {
                     ioex.printStackTrace();
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(activity.getApplicationContext(), "There was a problem submitting your vote. Poor signal? Please try again.", Toast.LENGTH_LONG).show();
-                        }
-                    });
+                    Utils.PostToastMessageToHandler(handler, "There was a problem submitting your vote. Poor signal? Please try again.", Toast.LENGTH_LONG);
                 } catch (JSONException jex) {
                     jex.printStackTrace();
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(activity.getApplicationContext(), "There was a problem submitting your vote. Poor signal? Please try again.", Toast.LENGTH_LONG).show();
-                        }
-                    });
+                    Utils.PostToastMessageToHandler(handler, "There was a problem submitting your vote. Poor signal? Please try again.", Toast.LENGTH_LONG);
                 }
             }
         }.start();
+    }
+
+    public static List<JavaShop> ParseShopJSON(String shopJson, String placesApiKey) {
+        List<JavaShop> shopList = new ArrayList<JavaShop>();
+        try {
+            JSONArray results = new JSONArray(shopJson);
+            for (int i = 0; i < results.length(); i++) {
+                // get JavaShop object and add it to the array with a rank indicator.
+                //TODO: make a cleaner ranking process. This seems sloppy
+                JavaShop tmpJS = GetLocation(placesApiKey, results.getJSONObject(i).getString(JSONvalues.shopRef.toString()));
+                tmpJS.votes = Integer.parseInt(results.getJSONObject(i).getString(JSONvalues.shopVotes.toString()));
+                shopList.add(tmpJS);
+                SortShopList(shopList);
+            }
+        } catch (JSONException jex) {
+        }
+        return shopList;
+    }
+
+    public static void SortShopList(List<JavaShop> shopList) {
+        SortShopList(shopList, 0, shopList.size() - 1);
+    }
+
+    private static void SortShopList(List<JavaShop> shopList, int left, int right) {
+        int i = left, j = right;
+        JavaShop tmp;
+        JavaShop pivot = shopList.get((left + right) / 2);
+
+        while (i <= j) {
+            while (shopList.get(i).getVotes() > pivot.getVotes())
+                i++;
+            while (shopList.get(j).getVotes() < pivot.getVotes())
+                j--;
+            if (i <= j) {
+                tmp = shopList.get(i);
+                shopList.set(i, shopList.get(j));
+                shopList.set(j, tmp);
+                i++;
+                j--;
+            }
+        }
+
+        if (left < i - 1)
+            SortShopList(shopList, left, i - 1);
+        if (i < right)
+            SortShopList(shopList, i, right);
     }
 
     // We're only using the #1 voted shop right now, but at some point it would be nice to have
     // a display for the top 5. This code allows for that, I just have to -
     //TODO: implement 'top 5' listview activity to implement this code. Would also be helpful to
     //TODO: show the user's current shop vote & maybe vote history.
-    public static void GetTopFive(final Activity activity, final Handler handler) {
-        new Thread() {
-            @Override
-            public void run() {
-                final HashMap<Integer, JavaShop> TopFive = new HashMap<Integer, JavaShop>();
-                for (int i = 1; i <= 5; i++) {
-                    TopFive.put(i, new JavaShop());
+    public static void GetTopTen(final Activity activity, final Handler handler) {
+        final SharedPreferences settings = activity.getSharedPreferences(Const.VotePrefs, 0);
+        final List<JavaShop> TopTen = new ArrayList<JavaShop>();
+        if (settings.getLong(Const.LastTopTenQueryTime, 0) > (Calendar.getInstance().getTimeInMillis() - 180000)) {
+            Message msg = new Message();
+            msg.arg1 = Const.CODE_GETTOPTEN;
+            handler.sendMessage(msg);
+        } else
+            new Thread() {
+                @Override
+                public void run() {
+                    for (int i = 0; i < 10; i++) {
+                        TopTen.add(new JavaShop());
+                    }
+                    BufferedReader in = null;
+                    try {
+                        HttpClient client = new DefaultHttpClient();
+                        HttpGet request = new HttpGet();
+                        request.setURI(new URI(activity.getResources().getString(R.string.server_url)));
+                        HttpResponse response = client.execute(request);
+                        in = new BufferedReader
+                                (new InputStreamReader(response.getEntity().getContent()));
+                        StringBuffer sb = new StringBuffer("");
+                        String line = "";
+                        while ((line = in.readLine()) != null) {
+                            sb.append(line);
+                        }
+                        in.close();
+                        SharedPreferences.Editor editor = settings.edit();
+                        editor.putString(Const.LastTopTenQueryResults, sb.toString());
+                        editor.putLong(Const.LastTopTenQueryTime, Calendar.getInstance().getTimeInMillis());
+                        editor.commit();
+
+                        Message msg = new Message();
+                        msg.arg1 = Const.CODE_GETTOPTEN;
+                        handler.sendMessage(msg);
+
+                        // more generic error handling
+                        //TODO: implement better error handling
+                    } catch (URISyntaxException usex) {
+                        usex.printStackTrace();
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
+                            }
+                        });
+                    } catch (ClientProtocolException cpex) {
+                        cpex.printStackTrace();
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
+                            }
+                        });
+                    } catch (IOException iex) {
+                        iex.printStackTrace();
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
+                            }
+                        });
+                    } finally {
+                        if (in != null) {
+                            try {
+                                in.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
                 }
-                BufferedReader in = null;
-                try {
-                    HttpClient client = new DefaultHttpClient();
-                    HttpGet request = new HttpGet();
-                    request.setURI(new URI(activity.getResources().getString(R.string.server_url)));
-                    HttpResponse response = client.execute(request);
-                    in = new BufferedReader
-                            (new InputStreamReader(response.getEntity().getContent()));
-                    StringBuffer sb = new StringBuffer("");
-                    String line = "";
-                    while ((line = in.readLine()) != null) {
-                        sb.append(line);
-                    }
-                    in.close();
-                    JSONObject results = new JSONObject(sb.toString());
-                    for (int i = 1; i <= results.length(); i++) {
-                        // get JavaShop object and add it to the array with a rank indicator.
-                        //TODO: make a cleaner ranking process. This seems sloppy
-                        TopFive.put(i, GetLocation(activity, results.getString("" + i)));
-                    }
-                    // more generic error handling
-                    //TODO: implement better error handling
-                } catch (URISyntaxException usex) {
-                    usex.printStackTrace();
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
-                        }
-                    });
-                } catch (ClientProtocolException cpex) {
-                    cpex.printStackTrace();
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
-                        }
-                    });
-                } catch (IOException iex) {
-                    iex.printStackTrace();
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
-                        }
-                    });
-                } catch (JSONException jex) {
-                    jex.printStackTrace();
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
-                        }
-                    });
-                } finally {
-                    if (in != null) {
-                        try {
-                            in.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-                // Set the top vote data on the main activity UI. If we add pages, this is going to cause a problem.
-                //TODO: make a proper handler in the main activity, set the javashop data to a variable and have the
-                //TODO: handler pick it up and display if the main activity is active.
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        ((TextView) activity.findViewById(R.id.main_currentbotdnametext)).setText(TopFive.get(1).getName());
-                        ((TextView) activity.findViewById(R.id.main_currentbotdaddresstext)).setText(TopFive.get(1).getVicinity());
-                        activity.findViewById(R.id.main_currentbotdparent).setTag(TopFive.get(1));
-                        // default url is '---', and may not get set if the http request fails, so just doublecheck before
-                        // setting the onClick.
-                        if (TopFive.get(1).getUrl().contains("http")) {
-                            activity.findViewById(R.id.main_currentbotdparent).setOnClickListener(new View.OnClickListener() {
-                                @Override
-                                public void onClick(View view) {
-                                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(TopFive.get(1).getUrl()));
-                                    activity.startActivity(browserIntent);
-                                }
-                            });
-                        }
-                    }
-                });
-            }
-        }.start();
+            }.start();
     }
 
     // secondary http request to the google places api. this resolves a reference code into all the other data
     // we want to use, like name, vicinity, and url. The server only stores and returns id and ref.
-    public static JavaShop GetLocation(Activity activity, String reference) {
+    public static JavaShop GetLocation(String placesApiKey, String reference) {
         try {
             HttpClient client = new DefaultHttpClient();
             HttpGet request = new HttpGet();
-            request.setURI(new URI("https://maps.googleapis.com/maps/api/place/details/json?reference=" + reference + "&sensor=true&key=" + activity.getResources().getString(R.string.google_api_key)));
+            request.setURI(new URI("https://maps.googleapis.com/maps/api/place/details/json?reference=" + reference + "&sensor=true&key=" + placesApiKey));
             HttpResponse response = client.execute(request);
             BufferedReader in = new BufferedReader
                     (new InputStreamReader(response.getEntity().getContent()));

@@ -1,6 +1,9 @@
 package com.tinyhydra.botd;
 
 import android.app.Activity;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.DisplayMetrics;
 
 import java.util.Calendar;
@@ -38,5 +41,15 @@ public class Utils {
             case DisplayMetrics.DENSITY_HIGH:
                 break;
         }
+    }
+
+    public static void PostToastMessageToHandler(Handler handler, String message, int toastLength) {
+        Message msg = new Message();
+        msg.arg1 = Const.CODE_SHOWTOAST;
+        msg.arg2 = toastLength;
+        Bundle bundle = new Bundle();
+        bundle.putString(Const.MessageToastString, message);
+        msg.setData(bundle);
+        handler.sendMessage(msg);
     }
 }

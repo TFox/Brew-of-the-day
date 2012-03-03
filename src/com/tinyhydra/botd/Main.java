@@ -17,6 +17,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Debug;
 import android.os.Handler;
+import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.*;
@@ -61,30 +62,30 @@ public class Main extends Activity {
         locationUpdating = false;
 
         // Set local resources for use later on
-        handler = new Handler();
         voteButton = (ImageButton) findViewById(R.id.main_votebutton);
         dateText = (TextView) findViewById(R.id.main_datetext);
         maxDistance = getResources().getInteger(R.integer.maxdistance);
         settings = getSharedPreferences(Const.GenPrefs, 0);
         editor = settings.edit();
-        vShops = false;
         // Set current date on the UI
         cal = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat("EEEE, MMM d, yyyy");
+        brewOfTheDayName = (TextView) findViewById(R.id.main_currentbotdnametext);
+        brewOfTheDayVicinity = (TextView) findViewById(R.id.main_currentbotdaddresstext);
         dateText.setText(sdf.format(cal.getTimeInMillis()));
         // We use distance to make sure you're in the right area to vote.
         // Set default to double max. gps updates will override.
         vDistance = maxDistance * 2;
 
         // Get the current brew of the day from the server
-        BotdServerOperations.GetTopFive(this, handler);
+        BotdServerOperations.GetTopTen(this, handler);
     }
 
     @Override
     public void onResume() {
         super.onResume();
         // update current brew of the day from the server 
-        BotdServerOperations.GetTopFive(this, handler);
+        BotdServerOperations.GetTopTen(this, handler);
     }
 
     // Local variables
@@ -100,14 +101,41 @@ public class Main extends Activity {
     JavaShopAdapter javaShopAdapter;
     Account account;
     Calendar cal;
-    Handler handler;
 
     ImageButton voteButton;
+    TextView brewOfTheDayName;
+    TextView brewOfTheDayVicinity;
     TextView dateText;
 
     int maxDistance;
     int vDistance;
-    boolean vShops;
+
+    final Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message message) {
+            switch (message.arg1) {
+                case Const.CODE_SHOWTOAST:
+                    Toast.makeText(Main.this, message.getData().getString(Const.MessageToastString), message.arg2).show();
+                    break;
+                case Const.CODE_GETTOPTEN:
+                    final JavaShop topShop = BotdServerOperations.ParseShopJSON(settings.getString(Const.LastTopTenQueryResults, ""), getResources().getString(R.string.google_api_key)).get(0);
+                    brewOfTheDayName.setText(topShop.getName());
+                    brewOfTheDayVicinity.setText(topShop.getVicinity());
+                    findViewById(R.id.main_currentbotdparent).setTag(topShop);
+                    // default url is '---', and may not get set if the http request fails, so just doublecheck before
+                    // setting the onClick.
+                    if (topShop.getUrl().contains("http")) {
+                        findViewById(R.id.main_currentbotdparent).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(topShop.getUrl()));
+                                startActivity(browserIntent);
+                            }
+                        });
+                    }
+            }
+        }
+    };
 
     // Initiating Menu XML file (menu.xml)
     @Override
@@ -125,7 +153,7 @@ public class Main extends Activity {
         switch (item.getItemId()) {
             case R.id.mainmenu_refresh:
                 // request current brew of the day (on demand) from server
-                BotdServerOperations.GetTopFive(this, handler);
+                BotdServerOperations.GetTopTen(this, handler);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -206,73 +234,6 @@ public class Main extends Activity {
         ld.show();
     }
 
-    public boolean GetShops() {
-        try {
-            // Use google places to get all the shops within '500' (I believe meters is the default measurement they use)
-            // make a list of JavaShops and pass it to the ListView adapter
-            List<JavaShop> tmpLocList = new ArrayList<JavaShop>();
-
-            HttpClient client = new DefaultHttpClient();
-            HttpGet request = new HttpGet();
-            int accuracy = Math.round(currentLoc.getAccuracy());
-            if (accuracy < 500)
-                accuracy = 500;
-            request.setURI(URI.create("https://maps.googleapis.com/maps/api/place/search/json?location=" + currentLoc.getLatitude() + "," + currentLoc.getLongitude() + "&radius=" + accuracy + "&types=" + URLEncoder.encode("cafe|restaurant|food", "UTF-8") + "&keyword=coffee&sensor=true&key=" + getResources().getString(R.string.google_api_key)));
-            HttpResponse response = client.execute(request);
-            BufferedReader in = new BufferedReader
-                    (new InputStreamReader(response.getEntity().getContent()));
-            StringBuffer sb = new StringBuffer("");
-            String line = "";
-            while ((line = in.readLine()) != null) {
-                sb.append(line);
-            }
-
-            JSONObject predictions = new JSONObject(sb.toString());
-            // Google passes back a status string. if we screw up, it won't say "OK". Alert the user.
-            String jstatus = predictions.getString("status");
-            if (jstatus.equals("ZERO_RESULTS")) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getApplicationContext(), "No shops found in your area.", Toast.LENGTH_SHORT).show();
-                    }
-                });
-                return false;
-            } else if (!jstatus.equals("OK")) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getApplicationContext(), "Error retrieving local shops.", Toast.LENGTH_SHORT).show();
-                    }
-                });
-                return false;
-            }
-            // if all is well, set this section as a pass.
-            vShops = true;
-
-            // This section may fail if there's no results, but we'll just display an empty list.
-            //TODO: alert the user and cancel the dialog if this fails
-            JSONArray ja = new JSONArray(predictions.getString("results"));
-
-            for (int i = 0; i < ja.length(); i++) {
-                JSONObject jo = (JSONObject) ja.get(i);
-                tmpLocList.add(new JavaShop(jo.getString("name"), jo.getString("id"), "", jo.getString("reference"), jo.getString("vicinity")));
-            }
-            javaShopAdapter.refreshShopList(tmpLocList);
-            return true;
-        } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return false;
-    }
-
     private void Validate() {
         vDistance = maxDistance * 2;
         // Check the account to make sure we can read it. We use the user's google account to prevent multiple votes
@@ -345,7 +306,9 @@ public class Main extends Activity {
                             validatePD.setMessage("Getting nearby cafe locations");
                         }
                     });
-                    if (GetShops()) {
+                    List<JavaShop> shopList = GoogleOperations.GetShops(handler, currentLoc, getResources().getString(R.string.google_api_key));
+                    if (shopList.size() > 0) {
+                        javaShopAdapter.refreshShopList(shopList);
                         handler.post(new Runnable() {
                             @Override
                             public void run() {
@@ -354,12 +317,7 @@ public class Main extends Activity {
                         });
                     }
                 } else {
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(getApplicationContext(), "You seem to be outside the Seattle area. Please try again from a location closer to the Emerald City.", Toast.LENGTH_LONG).show();
-                        }
-                    });
+                    Utils.PostToastMessageToHandler(handler, "You seem to be outside the Seattle area. Please try again from a location closer to the Emerald City.", Toast.LENGTH_LONG);
                 }
 
                 handler.post(new Runnable() {

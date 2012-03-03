@@ -24,6 +24,7 @@ public class JavaShop {
     //TODO: keep an eye on this, if users start reporting the address isn't correct, switch to the
     //TODO: 2nd http request to get the correct address and parse the state/zip/country data out
     String vicinity;
+    int votes;
 
     public JavaShop(String name, String id, String url, String reference, String vicinity) {
         this.name = name;
@@ -31,6 +32,16 @@ public class JavaShop {
         this.url = url;
         this.reference = reference;
         this.vicinity = vicinity;
+        this.votes = 0;
+    }
+
+    public JavaShop(String name, String id, String url, String reference, String vicinity, int votes) {
+        this.name = name;
+        this.id = id;
+        this.url = url;
+        this.reference = reference;
+        this.vicinity = vicinity;
+        this.votes = votes;
     }
 
     public JavaShop() {
@@ -41,6 +52,7 @@ public class JavaShop {
         this.url = "---";
         this.reference = "---";
         this.vicinity = "---";
+        this.votes = 0;
     }
 
     public String getName() {
@@ -63,6 +75,10 @@ public class JavaShop {
         return vicinity;
     }
 
+    public int getVotes() {
+        return votes;
+    }
+
     public void setName(String name) {
         this.name = name;
     }
@@ -81,5 +97,9 @@ public class JavaShop {
 
     public void setVicinity(String vicinity) {
         this.vicinity = vicinity;
+    }
+
+    public void setVotes(int votes) {
+        this.votes = votes;
     }
 }

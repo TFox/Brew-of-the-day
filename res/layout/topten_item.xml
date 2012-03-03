@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:background="@color/transparent">
+    <TextView android:id="@+id/tt_nametext"
+              android:layout_alignParentTop="true"
+              android:layout_alignParentLeft="true"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:textColor="@color/espresso"
+              android:text="Hello World"/>
+    <TextView android:id="@+id/tt_subtext"
+              android:layout_below="@id/tt_nametext"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:textColor="@color/espresso"
+              android:textStyle="italic"
+              android:text="Hello World"/>
+    <View android:id="@+id/tt_votesbg"
+          android:layout_alignParentRight="true"
+          android:background="@color/espresso"
+          android:layout_width="60dp"
+          android:layout_height="fill_parent"/>
+    <TextView android:id="@+id/tt_votestext"
+              android:layout_alignParentTop="true"
+              android:layout_alignParentRight="true"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:paddingRight="15dp"
+              android:gravity="center_vertical"
+              android:textColor="@color/creme"
+              android:text="votes:"/>
+    <TextView android:id="@+id/tt_votescount"
+              android:layout_alignParentRight="true"
+              android:layout_below="@id/tt_votestext"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:paddingRight="15dp"
+              android:textColor="@color/creme"
+              android:text="---"/>
+</RelativeLayout>
