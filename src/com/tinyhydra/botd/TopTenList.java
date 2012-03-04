@@ -50,7 +50,7 @@ public class TopTenList extends Activity {
                 startActivity(browserIntent);
             }
         });
-        BotdServerOperations.GetTopTen(this, handler);
+        BotdServerOperations.GetTopTen(this, handler, false);
     }
 
     SharedPreferences settings;
@@ -68,7 +68,7 @@ public class TopTenList extends Activity {
                     Toast.makeText(getApplicationContext(), message.getData().getString(Const.MessageToastString), message.arg2).show();
                     break;
                 case Const.CODE_GETTOPTEN:
-                    shopList = BotdServerOperations.ParseShopJSON(settings.getString(Const.LastTopTenQueryResults, ""), getResources().getString(R.string.google_api_key));
+                    shopList = BotdServerOperations.ParseShopJSON(settings.getString(Const.LastTopTenQueryResults, ""));
                     topTenAdapter.refreshTopTenList(shopList);
                     break;
             }

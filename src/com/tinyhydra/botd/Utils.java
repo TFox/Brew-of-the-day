@@ -6,6 +6,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.DisplayMetrics;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.TimeZone;
 
@@ -17,14 +19,15 @@ public class Utils {
     // not the server's date. Potential for problems is low, but -
     // TODO: get server date instead of phone date.
     public static long GetDate() {
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-
-        return cal.getTimeInMillis();
+        SimpleDateFormat date_format_gmt = new SimpleDateFormat("yyyy-MM-dd");
+        date_format_gmt.setTimeZone(TimeZone.getTimeZone("GMT-8"));
+        long returnDate = 0;
+        try {
+            returnDate = date_format_gmt.parse(date_format_gmt.format(Calendar.getInstance().getTime())).getTime();
+        } catch (ParseException pex) {
+            pex.printStackTrace();
+        }
+        return returnDate;
     }
 
     // not implemented. this section will help determine the screen size so we can download

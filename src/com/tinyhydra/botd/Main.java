@@ -69,14 +69,14 @@ public class Main extends Activity {
         vDistance = maxDistance * 2;
 
         // Get the current brew of the day from the server
-        BotdServerOperations.GetTopTen(this, handler);
+        BotdServerOperations.GetTopTen(this, handler, false);
     }
 
     @Override
     public void onResume() {
         super.onResume();
         // update current brew of the day from the server 
-        BotdServerOperations.GetTopTen(this, handler);
+        BotdServerOperations.GetTopTen(this, handler, false);
     }
 
     // Local variables
@@ -109,7 +109,7 @@ public class Main extends Activity {
                     Toast.makeText(Main.this, message.getData().getString(Const.MessageToastString), message.arg2).show();
                     break;
                 case Const.CODE_GETTOPTEN:
-                    final JavaShop topShop = BotdServerOperations.ParseShopJSON(settings.getString(Const.LastTopTenQueryResults, ""), getResources().getString(R.string.google_api_key)).get(0);
+                    final JavaShop topShop = BotdServerOperations.ParseShopJSON(settings.getString(Const.LastTopTenQueryResults, "")).get(0);
                     brewOfTheDayName.setText(topShop.getName());
                     brewOfTheDayVicinity.setText(topShop.getVicinity());
                     findViewById(R.id.main_currentbotdparent).setTag(topShop);
@@ -144,7 +144,7 @@ public class Main extends Activity {
         switch (item.getItemId()) {
             case R.id.mainmenu_refresh:
                 // request current brew of the day (on demand) from server
-                BotdServerOperations.GetTopTen(this, handler);
+                BotdServerOperations.GetTopTen(this, handler, true);
                 return true;
             case R.id.mainmenu_topten:
                 Intent i = new Intent(Main.this, TopTenList.class);

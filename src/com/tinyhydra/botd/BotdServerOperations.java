@@ -73,6 +73,7 @@ public class BotdServerOperations {
                         // the server will catch the duplicate vote based on the user's email address and send back a '1'.
                         Utils.PostToastMessageToHandler(handler, "Vote refused. You've probably already voted today.", Toast.LENGTH_LONG);
                     }
+                    GetTopTen(activity, handler, true);
                     // Catch blocks. Return a generic error if anything goes wrong.
                     //TODO: implement some better/more appropriate error handling.
                 } catch (URISyntaxException usex) {
@@ -95,7 +96,7 @@ public class BotdServerOperations {
         }.start();
     }
 
-    public static List<JavaShop> ParseShopJSON(String shopJson, String placesApiKey) {
+    public static List<JavaShop> ParseShopJSON(String shopJson) {
         List<JavaShop> shopList = new ArrayList<JavaShop>();
         try {
             JSONArray results = new JSONArray(shopJson);
@@ -106,8 +107,13 @@ public class BotdServerOperations {
                 if (i > results.length() - 1)
                     tmpJS = new JavaShop();
                 else {
-                    tmpJS = GetLocation(placesApiKey, results.getJSONObject(i).getString(JSONvalues.shopRef.toString()));
-                    tmpJS.votes = Integer.parseInt(results.getJSONObject(i).getString(JSONvalues.shopVotes.toString()));
+                    String shopId = results.getJSONObject(i).getString(JSONvalues.shopId.toString());
+                    String shopName = results.getJSONObject(i).getString(JSONvalues.shopName.toString());
+                    String shopUrl = results.getJSONObject(i).getString(JSONvalues.shopUrl.toString());
+                    String shopVicinity = results.getJSONObject(i).getString(JSONvalues.shopVicinity.toString());
+                    String shopRef = results.getJSONObject(i).getString(JSONvalues.shopRef.toString());
+                    int shopVotes = results.getJSONObject(i).getInt(JSONvalues.shopVotes.toString());
+                    tmpJS = new JavaShop(shopName, shopId, shopUrl, shopRef, shopVicinity, shopVotes);
                 }
                 shopList.add(tmpJS);
             }
@@ -146,14 +152,11 @@ public class BotdServerOperations {
             SortShopList(shopList, i, right);
     }
 
-    // We're only using the #1 voted shop right now, but at some point it would be nice to have
-    // a display for the top 5. This code allows for that, I just have to -
-    //TODO: implement 'top 5' listview activity to implement this code. Would also be helpful to
     //TODO: show the user's current shop vote & maybe vote history.
-    public static void GetTopTen(final Activity activity, final Handler handler) {
+    public static void GetTopTen(final Activity activity, final Handler handler, boolean override) {
         final SharedPreferences settings = activity.getSharedPreferences(Const.GenPrefs, 0);
         final List<JavaShop> TopTen = new ArrayList<JavaShop>();
-        if (settings.getLong(Const.LastTopTenQueryTime, 0) > (Calendar.getInstance().getTimeInMillis() - 180000)) {
+        if (settings.getLong(Const.LastTopTenQueryTime, 0) > (Calendar.getInstance().getTimeInMillis() - 180000) & !override) {
             Message msg = new Message();
             msg.arg1 = Const.CODE_GETTOPTEN;
             handler.sendMessage(msg);
@@ -191,28 +194,13 @@ public class BotdServerOperations {
                         //TODO: implement better error handling
                     } catch (URISyntaxException usex) {
                         usex.printStackTrace();
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
-                            }
-                        });
+Utils.PostToastMessageToHandler(handler, "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG);
                     } catch (ClientProtocolException cpex) {
                         cpex.printStackTrace();
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
-                            }
-                        });
+                        Utils.PostToastMessageToHandler(handler, "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG);
                     } catch (IOException iex) {
                         iex.printStackTrace();
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(activity.getApplicationContext(), "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG).show();
-                            }
-                        });
+                        Utils.PostToastMessageToHandler(handler, "Unable to retrieve Brew of the day. Poor signal? Please try again", Toast.LENGTH_LONG);
                     } finally {
                         if (in != null) {
                             try {
@@ -224,42 +212,5 @@ public class BotdServerOperations {
                     }
                 }
             }.start();
-    }
-
-    // secondary http request to the google places api. this resolves a reference code into all the other data
-    // we want to use, like name, vicinity, and url. The server only stores and returns id and ref.
-    public static JavaShop GetLocation(String placesApiKey, String reference) {
-        try {
-            HttpClient client = new DefaultHttpClient();
-            HttpGet request = new HttpGet();
-            request.setURI(new URI("https://maps.googleapis.com/maps/api/place/details/json?reference=" + reference + "&sensor=true&key=" + placesApiKey));
-            HttpResponse response = client.execute(request);
-            BufferedReader in = new BufferedReader
-                    (new InputStreamReader(response.getEntity().getContent()));
-            StringBuffer sb = new StringBuffer("");
-            String line = "";
-            while ((line = in.readLine()) != null) {
-                sb.append(line);
-            }
-
-            JSONObject results = new JSONObject(sb.toString());
-            String jstatus = results.getString("status");
-            if (jstatus.equals("OK")) {
-                JSONObject resultObj = results.getJSONObject("result");
-                return new JavaShop(resultObj.getString("name"), resultObj.getString("id"), resultObj.getString("url"), reference, resultObj.getString("vicinity"));
-            }
-        } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (URISyntaxException usex) {
-            usex.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return new JavaShop();
     }
 }
