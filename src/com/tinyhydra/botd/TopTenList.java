@@ -46,8 +46,10 @@ public class TopTenList extends Activity {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 JavaShop javaShop = (JavaShop) view.findViewById(R.id.tt_nametext).getTag();
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(javaShop.getUrl()));
-                startActivity(browserIntent);
+                if (javaShop.getUrl().contains("http")) {
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(javaShop.getUrl()));
+                    startActivity(browserIntent);
+                }
             }
         });
         BotdServerOperations.GetTopTen(this, handler, false);

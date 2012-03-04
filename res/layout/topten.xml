@@ -1,8 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<ListView xmlns:android="http://schemas.android.com/apk/res/android"
-          android:id="@+id/topten_parent"
-          android:layout_width="fill_parent"
-          android:layout_height="fill_parent"
-          android:background="@drawable/bgmain">
-</ListView>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:background="@drawable/bgmain">
+    <TextView android:id="@+id/tt_titletext"
+              android:layout_alignParentTop="true"
+              android:gravity="center"
+              android:layout_width="fill_parent"
+              android:layout_height="wrap_content"
+              style="@style/OverlayText"
+              android:textSize="30dp"
+              android:textStyle="bold"
+              android:text="Daily Top Ten"/>
+    <TextView android:id="@+id/tt_namecoltext"
+              android:layout_below="@id/tt_titletext"
+              android:layout_alignParentLeft="true"
+              android:paddingLeft="5dp"
+              android:gravity="left"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              style="@style/OverlayText"
+              android:textStyle="italic|bold"
+              android:text="Shop"/>
+    <TextView android:id="@+id/tt_votescoltext"
+              android:layout_below="@id/tt_titletext"
+              android:layout_alignParentRight="true"
+              android:paddingRight="5dp"
+              android:gravity="right"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              style="@style/OverlayText"
+              android:textStyle="italic|bold"
+              android:text="votes:"/>
+    <View android:id="@+id/tt_sep1"
+          android:layout_below="@id/tt_namecoltext"
+          android:layout_height="1dp"
+          android:layout_marginBottom="2dp"
+          android:background="@color/espresso"
+          android:layout_width="fill_parent"/>
+    <ListView xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/topten_parent"
+              android:layout_below="@id/tt_sep1"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+              android:paddingLeft="2dp"
+              android:paddingRight="2dp"
+              android:cacheColorHint="#00000000">
+    </ListView>
+</RelativeLayout>
