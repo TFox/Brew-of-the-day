@@ -171,6 +171,9 @@ public class BotdServerOperations {
     public static void GetTopTen(final Activity activity, final Handler handler, boolean override) {
         final SharedPreferences settings = activity.getSharedPreferences(Const.GenPrefs, 0);
         final List<JavaShop> TopTen = new ArrayList<JavaShop>();
+        for (int i = 0; i < 10; i++) {
+            TopTen.add(new JavaShop());
+        }
         if (settings.getLong(Const.LastTopTenQueryTime, 0) > (Calendar.getInstance().getTimeInMillis() - 180000) & !override) {
             Message msg = new Message();
             msg.arg1 = Const.CODE_GETTOPTEN;
@@ -179,9 +182,6 @@ public class BotdServerOperations {
             new Thread() {
                 @Override
                 public void run() {
-                    for (int i = 0; i < 10; i++) {
-                        TopTen.add(new JavaShop());
-                    }
                     BufferedReader in = null;
                     try {
                         HttpClient client = new DefaultHttpClient();
