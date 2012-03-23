@@ -285,7 +285,7 @@ public class Main extends Activity {
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException iex) {
-                        Log.e("Location Update", "Interrupted waiting for location update");
+                        iex.printStackTrace();
                     }
                     if (count == 5 && lm.isProviderEnabled(LocationManager.GPS_PROVIDER))
                         handler.post(new Runnable() {

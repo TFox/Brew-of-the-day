@@ -1,16 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:ads="http://schemas.android.com/apk/lib/com.google.ads"
                 android:background="@drawable/bgmain"
                 android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:padding="10dp">
-    <TextView android:layout_height="wrap_content"
-              android:layout_width="wrap_content"
-              android:layout_alignParentTop="true"
-              android:layout_alignParentRight="true"
-              android:textColor="@android:color/white"
-              android:gravity="right"
-              android:text="Beta"/>
+                android:layout_height="fill_parent">
     <TextView android:id="@+id/main_loctext"
               android:gravity="center"
               android:layout_alignParentLeft="true"
@@ -19,7 +12,8 @@
               android:layout_height="wrap_content"
               style="@style/OverlayText"
               android:textStyle="bold"
-              android:text="Seattle's favorite"/>
+              android:text="Seattle's favorite"
+              android:paddingTop="5dp"/>
     <TextView android:id="@+id/main_brewtext"
               android:layout_below="@id/main_loctext"
               android:gravity="center"
@@ -40,7 +34,9 @@
                   android:layout_below="@id/main_datetext"
                   android:layout_height="wrap_content"
                   android:layout_width="fill_parent"
-                  android:orientation="vertical">
+                  android:orientation="vertical"
+                  android:paddingLeft="10dp"
+                  android:paddingRight="10dp">
         <View android:id="@+id/main_sep1"
               android:layout_height="1dp"
               android:layout_marginTop="5dp"
@@ -65,9 +61,36 @@
               android:background="@color/espresso"
               android:layout_width="fill_parent"/>
     </LinearLayout>
+    <com.google.ads.AdView android:id="@+id/main_adView"
+                           android:layout_alignParentBottom="true"
+                           android:layout_width="wrap_content"
+                           android:layout_height="wrap_content"
+                           ads:adUnitId="@string/admob_key"
+                           ads:adSize="BANNER"
+                           ads:loadAdOnCreate="true"/>
+    <TextView android:id="@+id/main_copyright"
+              android:layout_height="wrap_content"
+              android:layout_width="wrap_content"
+              android:layout_alignParentLeft="true"
+              android:layout_above="@id/main_adView"
+              android:textColor="@color/espresso"
+              android:gravity="right"
+              android:text="Menu ▼"
+              android:padding="5dp"
+              android:onClick=""/>
+    <TextView android:id="@+id/main_copyright"
+              android:layout_height="wrap_content"
+              android:layout_width="wrap_content"
+              android:layout_alignParentRight="true"
+              android:layout_above="@id/main_adView"
+              android:textColor="@color/espresso"
+              android:gravity="right"
+              android:text="©copyright 2012 tinyhydra.com"
+              android:padding="5dp"/>
     <LinearLayout android:layout_below="@id/main_currentbotdparent"
+                  android:layout_above="@id/main_copyright"
                   android:layout_width="fill_parent"
-                  android:layout_height="fill_parent"
+                  android:layout_height="wrap_content"
                   android:gravity="center|center_vertical"
                   android:orientation="vertical">
         <ImageButton android:id="@+id/main_votebutton"
@@ -77,11 +100,4 @@
                      android:layout_width="wrap_content"
                      android:onClick="Vote"/>
     </LinearLayout>
-    <TextView android:layout_height="wrap_content"
-              android:layout_width="fill_parent"
-              android:layout_alignParentBottom="true"
-              android:textColor="@color/espresso"
-              android:gravity="right"
-              android:text="©copyright 2012 tinyhydra.com"/>
 </RelativeLayout>
-
