@@ -113,27 +113,25 @@ public class BotdServerOperations {
 
     public static List<JavaShop> ParseShopJSON(String shopJson) {
         List<JavaShop> shopList = new ArrayList<JavaShop>();
+        for (int i = 0; i < 10; i++)
+            shopList.add(new JavaShop());
         try {
             JSONArray results = new JSONArray(shopJson);
             for (int i = 0; i < 10; i++) {
                 // get JavaShop object and add it to the array with a rank indicator.
                 //TODO: make a cleaner ranking process. This seems sloppy
-                JavaShop tmpJS;
-                if (i > results.length() - 1)
-                    tmpJS = new JavaShop();
-                else {
-                    String shopId = results.getJSONObject(i).getString(JSONvalues.shopId.toString());
-                    String shopName = results.getJSONObject(i).getString(JSONvalues.shopName.toString());
-                    String shopUrl = results.getJSONObject(i).getString(JSONvalues.shopUrl.toString());
-                    String shopVicinity = results.getJSONObject(i).getString(JSONvalues.shopVicinity.toString());
-                    String shopRef = results.getJSONObject(i).getString(JSONvalues.shopRef.toString());
-                    int shopVotes = results.getJSONObject(i).getInt(JSONvalues.shopVotes.toString());
-                    tmpJS = new JavaShop(shopName, shopId, shopUrl, shopRef, shopVicinity, shopVotes);
+                if (i < results.length() - 1) {
+                    shopList.get(i).setId(results.getJSONObject(i).getString(JSONvalues.shopId.toString()));
+                    shopList.get(i).setName(results.getJSONObject(i).getString(JSONvalues.shopName.toString()));
+                    shopList.get(i).setUrl(results.getJSONObject(i).getString(JSONvalues.shopUrl.toString()));
+                    shopList.get(i).setVicinity(results.getJSONObject(i).getString(JSONvalues.shopVicinity.toString()));
+                    shopList.get(i).setReference(results.getJSONObject(i).getString(JSONvalues.shopRef.toString()));
+                    shopList.get(i).setVotes(results.getJSONObject(i).getInt(JSONvalues.shopVotes.toString()));
                 }
-                shopList.add(tmpJS);
             }
             SortShopList(shopList);
         } catch (JSONException jex) {
+            jex.printStackTrace();
         }
         return shopList;
     }
