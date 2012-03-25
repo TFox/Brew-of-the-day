@@ -18,7 +18,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -81,9 +80,6 @@ public class Main extends Activity {
         // We use distance to make sure you're in the right area to vote.
         // Set default to double max. gps updates will override.
         vDistance = maxDistance * 2;
-
-        // Get the current brew of the day from the server
-        BotdServerOperations.GetTopTen(this, handler, false);
     }
 
     @Override
