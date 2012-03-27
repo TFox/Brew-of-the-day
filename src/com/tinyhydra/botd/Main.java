@@ -59,7 +59,6 @@ public class Main extends Activity {
         // set location services, we'll use this later to find nearby coffee shops
         lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         ll = new BrewLocationListener();
-        currentLoc = lm.getLastKnownLocation(lm.getBestProvider(new Criteria(), true));
         origin = new Location(lm.getBestProvider(new Criteria(), false));
         origin.setLatitude(Double.parseDouble(this.getResources().getString(R.string.seattlelat)));
         origin.setLongitude(Double.parseDouble(this.getResources().getString(R.string.seattlelng)));
