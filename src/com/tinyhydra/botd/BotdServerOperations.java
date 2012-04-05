@@ -120,7 +120,7 @@ public class BotdServerOperations {
             for (int i = 0; i < 10; i++) {
                 // get JavaShop object and add it to the array with a rank indicator.
                 //TODO: make a cleaner ranking process. This seems sloppy
-                if (i < results.length() - 1) {
+                if (i < results.length()) {
                     shopList.get(i).setId(results.getJSONObject(i).getString(JSONvalues.shopId.toString()));
                     shopList.get(i).setName(results.getJSONObject(i).getString(JSONvalues.shopName.toString()));
                     shopList.get(i).setUrl(results.getJSONObject(i).getString(JSONvalues.shopUrl.toString()));
